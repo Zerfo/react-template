@@ -15,10 +15,14 @@ export const apiClient = createSafeFetch({
     onResponse: async response => {
       if (response.status === 401) {
         await queryClient.cancelQueries()
+        // todo: add refresh token func
       }
     },
   },
-  retries: { retries: 0 },
+  retries: {
+    retries: 1,
+    retryOn: ({ response }) => response?.status === 401,
+  },
   timeoutMs: 5 * 10_000,
   totalTimeoutMs: 25 * 10_000,
 })
