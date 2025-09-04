@@ -1,26 +1,24 @@
-import ky from 'ky'
+import { createSafeFetch } from '@asouei/safe-fetch'
 
-import { enhanceResponseError } from '@/shared/lib/api/enhanceResponseError.ts'
+import { enhanceResponseError } from '@/shared/lib/api/enhanceResponseError'
+import { ENV } from '@/shared/model/env'
 
 import { queryClient } from './query-client'
 
-export const apiClient = ky.create({
+export const apiClient = createSafeFetch({
+  baseURL: ENV.BASE_URL,
   headers: {},
-  hooks: {
-    afterResponse: [
-      async (_, __, response) => {
-        if (response.status === 401) {
-          await queryClient.cancelQueries()
-        }
-      },
-    ],
-    beforeError: [
-      async error => {
-        await enhanceResponseError(error)
-        return error
-      },
-    ],
+  interceptors: {
+    onError: async error => {
+      await enhanceResponseError(error)
+    },
+    onResponse: async response => {
+      if (response.status === 401) {
+        await queryClient.cancelQueries()
+      }
+    },
   },
-  retry: 0,
-  timeout: false,
+  retries: { retries: 0 },
+  timeoutMs: 5 * 10_000,
+  totalTimeoutMs: 25 * 10_000,
 })
